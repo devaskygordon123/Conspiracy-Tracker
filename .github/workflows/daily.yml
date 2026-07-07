@@ -6,15 +6,19 @@ on:
     - cron: '0 8 * * *'
   workflow_dispatch: # This adds a button so you can test it manually right now
 
+# THIS IS THE NEW MAGIC SPELL! It gives the robot permission to save files.
+permissions:
+  contents: write
+
 jobs:
   run_robot:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4 # Updated to the newest boots!
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5 # Updated to the newest boots!
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
