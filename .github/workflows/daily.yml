@@ -1,0 +1,35 @@
+name: Daily Conspiracy Robot
+
+on:
+  schedule:
+    # This tells it to run at 8:00 AM UTC every day
+    - cron: '0 8 * * *'
+  workflow_dispatch: # This adds a button so you can test it manually right now
+
+jobs:
+  run_robot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Robot Tools
+        run: pip install feedparser requests
+
+      - name: Run the Detective
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python detective.py
+
+      - name: Save the New Notebook
+        run: |
+          git config user.name "Conspiracy Robot"
+          git config user.email "robot@example.com"
+          git add data.json
+          git commit -m "Updated daily conspiracies" || echo "No changes to commit"
+          git push
