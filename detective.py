@@ -3,6 +3,7 @@ import requests
 import json
 import os
 import re
+import time
 from datetime import datetime
 
 # 1. THE PLACES WE LISTEN TO
@@ -22,10 +23,10 @@ def gather_rss_clues():
     for url in rss_feeds:
         try:
             feed = feedparser.parse(url, request_kwargs={'timeout': 10})
-            for item in feed.entries[:5]: # Reduced to 5 posts to be extra safe
+            for item in feed.entries[:15]: 
                 title = getattr(item, 'title', 'No title')
                 desc = getattr(item, 'description', 'No description')
-                clues.append(title + " " + desc[:100]) # Reduced to 100 characters
+                clues.append(title + " " + desc[:300]) 
         except:
             pass 
     return clues
@@ -38,37 +39,32 @@ def gather_4chan_clues():
             res = requests.get(f"https://a.4cdn.org/{board}/catalog.json", timeout=10)
             pages = res.json()
             for page in pages[:1]:
-                for thread in page['threads'][:5]: 
+                for thread in page['threads'][:10]: 
                     sub = thread.get('sub', '')
                     com = thread.get('com', '')
-                    com = re.sub('<[^>]+>', '', com)[:100] # Reduced to 100 characters
+                    com = re.sub('<[^>]+>', '', com)[:300]
                     clues.append(f"4chan /{board}/: {sub} {com}")
         except:
             pass 
     return clues
 
-def ask_cloud_ai_brain_both_questions(clues):
-    if not clues:
-        return "The robot couldn't hear any gossip today.", "The robot couldn't hear any gossip today."
-        
-    today_date = datetime.now().strftime("%B %d")
-    
-    # We ask BOTH questions in ONE letter!
+def ask_ai_for_chunk(chunk, today_date):
+    """Reads a small chapter of papers and writes a deep report."""
     prompt = f"""
-    You are a conspiracy analyst robot. Look at these short internet posts from 4chan, Reddit, and YouTube:
-    {clues}
+    You are an expert, in-depth conspiracy analyst robot. Look at these internet posts from 4chan, Reddit, YouTube, and News:
+    {chunk}
     
     Today's date is {today_date}.
     
-    I need you to do TWO things:
-    1. Find ONLY brand new conspiracy theories being discussed for the first time. Ignore old conspiracies unless there is a new twist today.
-    2. Find OLD conspiracies, past predictions, or historical theories mentioned today, OR predictions specifically pointing to today's date ({today_date}).
+    I need you to do TWO things with DEEP ANALYSIS:
+    1. Find ONLY brand new conspiracy theories being discussed for the first time. Provide a detailed analysis of what the theory is and why people are talking about it today. Ignore old conspiracies unless there is a brand new twist today.
+    2. Find OLD conspiracies, past predictions, or historical theories mentioned today, OR predictions specifically pointing to today's date ({today_date}). Explain the history of the prediction.
     
     You MUST output your answer EXACTLY in this format:
     ===NEW===
-    [Bulleted list of new conspiracies, or "None today."]
+    [Bulleted list with deep analysis, or "None today."]
     ===PAST===
-    [Bulleted list of past/dated conspiracies, or "None today."]
+    [Bulleted list with deep analysis, or "None today."]
     """
     
     api_key = os.environ.get("GROQ_API_KEY")
@@ -80,47 +76,26 @@ def ask_cloud_ai_brain_both_questions(clues):
     }
     
     try:
-        response = requests.post(url, headers=headers, json=data, timeout=30)
+        response = requests.post(url, headers=headers, json=data, timeout=45)
         if response.status_code != 200:
-            error_msg = f"Error: {response.text}"
-            return error_msg, error_msg
+            return f"Error: {response.text}", "Error."
         
         ai_thoughts = response.json()['choices'][0]['message']['content']
         
-        # Split the AI's answer into two sections
-        if "===PAST===" in ai_thoughts:
-            parts = ai_thoughts.split("===PAST===")
-            new_section = parts[0].replace("===NEW===", "").strip()
-            past_section = parts[1].strip()
-            return new_section, past_section
-        else:
-            return ai_thoughts, "Error parsing time machine section."
-            
-        try:
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        if response.status_code != 200:
-            error_msg = f"Error: {response.text}"
-            return error_msg, error_msg
-        
-        ai_thoughts = response.json()['choices'][0]['message']['content']
-        
-        # ROBOT DECODER RING! Looks for the secret split code
+        # Decoder Ring
         if "===PAST===" in ai_thoughts:
             parts = ai_thoughts.split("===PAST===")
             new_section = parts[0].replace("===NEW===", "").strip()
             past_section = parts[1].strip()
             return new_section, past_section
         elif "===NEW===" in ai_thoughts:
-            # If the AI only wrote the NEW code but forgot PAST
             new_section = ai_thoughts.replace("===NEW===", "").strip()
             return new_section, "None today."
         else:
-            # If the AI forgot the secret code completely, just put it all in NEW
             return ai_thoughts, "None today."
             
     except Exception as e:
-        error_msg = f"Connection broke: {str(e)}"
-        return error_msg, error_msg
+        return f"Connection broke: {str(e)}", "Error."
 
 def save_to_notebook(new_response, past_response):
     today_data = {
@@ -132,12 +107,34 @@ def save_to_notebook(new_response, past_response):
     print("Robot Detective finished updating both notebooks!")
 
 # RUN THE DETECTIVE
-print("Gathering clues...")
+print("Gathering a giant stack of clues...")
 rss_clues = gather_rss_clues()
 chan_clues = gather_4chan_clues()
 all_clues = rss_clues + chan_clues
 
-print("Asking AI brain to do both tasks at once...")
-new_thoughts, past_thoughts = ask_cloud_ai_brain_both_questions(all_clues)
+today_date = datetime.now().strftime("%B %d")
+all_new_reports = []
+all_past_reports = []
 
-save_to_notebook(new_thoughts, past_thoughts)
+# THE CHAPTER METHOD: Cut the giant stack into chunks of 8 posts
+chunk_size = 8
+print(f"Total clues gathered: {len(all_clues)}. Reading in chunks of {chunk_size}...")
+
+for i in range(0, len(all_clues), chunk_size):
+    chunk = all_clues[i:i + chunk_size]
+    print(f"Reading Chapter {i//chunk_size + 1}...")
+    
+    new_str, past_str = ask_ai_for_chunk(chunk, today_date)
+    all_new_reports.append(new_str)
+    all_past_reports.append(past_str)
+    
+    # Take a 3-second nap so the AI brain doesn't choke
+    if i + chunk_size < len(all_clues):
+        time.sleep(3)
+
+# Staple all the reports together!
+final_new = "\n\n".join(all_new_reports)
+final_past = "\n\n".join(all_past_reports)
+
+print("Stapling reports together and saving...")
+save_to_notebook(final_new, final_past)
