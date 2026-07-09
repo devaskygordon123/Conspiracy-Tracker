@@ -3,17 +3,29 @@ import requests
 import json
 import os
 
-# 1. THE PLACES WE LISTEN TO (We added News sites and more forums!)
+# 1. THE PLACES WE LISTEN TO (Now with YouTube and Forums!)
 rss_feeds = [
-    # Reddit Conspiracy Boards
+    # --- REDDIT ---
     "https://www.reddit.com/r/conspiracy/new/.rss",
     "https://www.reddit.com/r/conspiracy_commons/new/.rss",
     "https://www.reddit.com/r/QAnon_Casualties/new/.rss",
     "https://www.reddit.com/r/TrueOffMyChest/new/.rss",
-    "https://www.reddit.com/r/wayfair/new/.rss",
-    # Mainstream News (Sometimes conspiracies start here)
-    "https://feeds.bbci.co.uk/news/world/rss.xml",
-    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+    
+    # --- YOUTUBE (We use the secret RSS links for specific channels) ---
+    # Corbett Report (Alternative news/conspiracies)
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCa6QWHlA2uMmU5B5vMuT5Pw",
+    # Alltime Conspiracies
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCiE_m7qL4QRBwDJLnN4ZB7A",
+    # Bright Insight (Alternative history/theories)
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCsQalatfFKkvjSv-T7j9Mug",
+    
+    # --- ALTERNATIVE FORUMS & NEWS ---
+    # ZeroHedge (Popular alternative finance/conspiracy site)
+    "https://www.zerohedge.com/fullrss.xml",
+    # Gab's general trending feed (Free speech alternative platform)
+    "https://trends.gab.com/feed/rss",
+    # BBC World News (To catch mainstream stories that spark conspiracies)
+    "https://feeds.bbci.co.uk/news/world/rss.xml"
 ]
 
 def gather_clues():
@@ -22,8 +34,8 @@ def gather_clues():
     for url in rss_feeds:
         try:
             feed = feedparser.parse(url)
-            # WE CHANGED THIS FROM 10 TO 25! Grabs more posts.
             for item in feed.entries[:25]: 
+                # YouTube RSS uses 'title' and 'link', so we grab those
                 title = getattr(item, 'title', 'No title')
                 desc = getattr(item, 'description', 'No description')
                 clues.append(title + " " + desc)
@@ -33,11 +45,10 @@ def gather_clues():
 
 def ask_cloud_ai_brain(clues):
     if not clues:
-        return "The robot couldn't hear any gossip from the internet today (Reddit might be blocking the server). Try again tomorrow!"
+        return "The robot couldn't hear any gossip from the internet today. Try again tomorrow!"
         
-    # WE UPDATED THE RULES HERE! Now it lists EVERYTHING.
     prompt = f"""
-    You are a conspiracy analyst robot. Look at these internet posts and news headlines:
+    You are a conspiracy analyst robot. Look at these internet posts, YouTube video titles, and news headlines:
     {clues}
     
     Find ONLY brand new conspiracy theories being discussed for the first time.
@@ -73,7 +84,6 @@ def save_to_notebook(ai_response):
     with open("data.json", "w") as file:
         json.dump(today_data, file)
     print("Robot Detective finished updating the notebook!")
-    print(f"Saved: {ai_response}")
 
 # RUN THE DETECTIVE
 clues = gather_clues()
