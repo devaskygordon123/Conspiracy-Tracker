@@ -21,15 +21,14 @@ def gather_rss_clues():
     clues = []
     for url in rss_feeds:
         try:
-            feed = feedparser.parse(url)
-            # REDUCED TO 10 posts per site
+            # Added a stopwatch! 10 seconds max per website.
+            feed = feedparser.parse(url, request_kwargs={'timeout': 10})
             for item in feed.entries[:10]: 
                 title = getattr(item, 'title', 'No title')
                 desc = getattr(item, 'description', 'No description')
-                # MAGIC SPELL: Only keep the first 150 characters so we don't choke the AI!
                 clues.append(title + " " + desc[:150]) 
         except:
-            pass
+            pass # If it times out, just skip it!
     return clues
 
 def gather_4chan_clues():
@@ -37,18 +36,17 @@ def gather_4chan_clues():
     boards = ['x', 'pol']
     for board in boards:
         try:
-            res = requests.get(f"https://a.4cdn.org/{board}/catalog.json")
+            # Added a stopwatch! 10 seconds max per board.
+            res = requests.get(f"https://a.4cdn.org/{board}/catalog.json", timeout=10)
             pages = res.json()
             for page in pages[:1]:
-                # REDUCED TO 5 threads per board
                 for thread in page['threads'][:5]: 
                     sub = thread.get('sub', '')
                     com = thread.get('com', '')
-                    # Strip HTML and keep it short!
                     com = re.sub('<[^>]+>', '', com)[:150]
                     clues.append(f"4chan /{board}/: {sub} {com}")
         except:
-            pass
+            pass # If it times out, just skip it!
     return clues
 
 def ask_cloud_ai_brain(clues, is_time_machine=False):
@@ -83,7 +81,8 @@ def ask_cloud_ai_brain(clues, is_time_machine=False):
     }
     
     try:
-        response = requests.post(url, headers=headers, json=data)
+        # Added a stopwatch! 30 seconds max for the AI brain to think.
+        response = requests.post(url, headers=headers, json=data, timeout=30)
         if response.status_code != 200:
             return f"Error: {response.text}"
         return response.json()['choices'][0]['message']['content']
