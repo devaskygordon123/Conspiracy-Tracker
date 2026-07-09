@@ -5,23 +5,35 @@
     <style>
         body { background-color: black; color: #00FF00; font-family: monospace; text-align: center; }
         .box { border: 2px solid #00FF00; padding: 20px; margin: 20px; text-align: left; }
+        .past-box { border: 2px solid #FFFF00; } /* Yellow box for the time machine */
+        h2 { color: #00FFFF; } /* Cyan headers */
     </style>
 </head>
 <body>
 
     <h1>🤖 Robot Conspiracy Tracker 🤖</h1>
-    <p>Brand new theories detected today!!!</p>
     
+    <h2>🆕 Brand New Theories Detected Today:</h2>
     <div class="box" id="conspiracy-data">
-        Loading data...
+        Loading new data...
+    </div>
+
+    <h2>🕰️ Time Machine: Past Predictions & Old Theories Mentioned Today:</h2>
+    <div class="box past-box" id="past-conspiracy-data">
+        Loading past data...
     </div>
 
     <script>
         fetch('data.json')
             .then(response => response.json())
             .then(data => {
-                let text = data.conspiracies.replace(/\n/g, "<br>");
-                document.getElementById('conspiracy-data').innerHTML = text;
+                // Update the New Conspiracies box
+                let newText = data.conspiracies.replace(/\n/g, "<br>");
+                document.getElementById('conspiracy-data').innerHTML = newText;
+                
+                // Update the Past Conspiracies box
+                let pastText = data.past_conspiracies.replace(/\n/g, "<br>");
+                document.getElementById('past-conspiracy-data').innerHTML = pastText;
             });
     </script>
 
