@@ -3,11 +3,17 @@ import requests
 import json
 import os
 
-# 1. THE PLACES WE LISTEN TO
+# 1. THE PLACES WE LISTEN TO (We added News sites and more forums!)
 rss_feeds = [
+    # Reddit Conspiracy Boards
     "https://www.reddit.com/r/conspiracy/new/.rss",
     "https://www.reddit.com/r/conspiracy_commons/new/.rss",
-    "https://www.reddit.com/r/QAnon_Casualties/new/.rss"
+    "https://www.reddit.com/r/QAnon_Casualties/new/.rss",
+    "https://www.reddit.com/r/TrueOffMyChest/new/.rss",
+    "https://www.reddit.com/r/wayfair/new/.rss",
+    # Mainstream News (Sometimes conspiracies start here)
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
 ]
 
 def gather_clues():
@@ -16,7 +22,8 @@ def gather_clues():
     for url in rss_feeds:
         try:
             feed = feedparser.parse(url)
-            for item in feed.entries[:10]:
+            # WE CHANGED THIS FROM 10 TO 25! Grabs more posts.
+            for item in feed.entries[:25]: 
                 title = getattr(item, 'title', 'No title')
                 desc = getattr(item, 'description', 'No description')
                 clues.append(title + " " + desc)
@@ -28,14 +35,16 @@ def ask_cloud_ai_brain(clues):
     if not clues:
         return "The robot couldn't hear any gossip from the internet today (Reddit might be blocking the server). Try again tomorrow!"
         
+    # WE UPDATED THE RULES HERE! Now it lists EVERYTHING.
     prompt = f"""
-    You are a conspiracy analyst robot. Look at these internet posts:
+    You are a conspiracy analyst robot. Look at these internet posts and news headlines:
     {clues}
     
     Find ONLY brand new conspiracy theories being discussed for the first time.
     Ignore old conspiracies (like JFK, Flat Earth, or 9/11) unless there is a brand new twist today.
     
-    Output the results as a simple bulleted list. If there are no new conspiracies, say "None today."
+    IMPORTANT: List EVERY single new conspiracy you find. Do not limit it to 5. Do not summarize. 
+    Output the results as a bulleted list. If there are no new conspiracies, say "None today."
     """
     
     api_key = os.environ.get("GROQ_API_KEY")
@@ -51,7 +60,6 @@ def ask_cloud_ai_brain(clues):
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        # If the AI brain sends an error, catch it so we don't crash!
         if response.status_code != 200:
             return f"The AI brain sent back an error. Code: {response.status_code}. Message: {response.text}"
         
