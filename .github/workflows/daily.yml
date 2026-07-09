@@ -2,16 +2,18 @@ name: Daily Conspiracy Robot
 
 on:
   schedule:
+    # This tells it to run at 8:00 AM UTC every day
     - cron: '0 8 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # This adds a button so you can test it manually
 
+# This gives the robot permission to save files
 permissions:
   contents: write
 
 jobs:
   run_robot:
     runs-on: ubuntu-latest
-    timeout-minutes: 5 # <--- NEW STOPWATCH! Kills the robot if it takes too long.
+    timeout-minutes: 15 # <--- CHANGED TO 15 MINUTES SO IT CAN TAKE NAPS!
     steps:
       - name: Check out the code
         uses: actions/checkout@v4
