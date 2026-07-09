@@ -96,6 +96,28 @@ def ask_cloud_ai_brain_both_questions(clues):
         else:
             return ai_thoughts, "Error parsing time machine section."
             
+        try:
+        response = requests.post(url, headers=headers, json=data, timeout=30)
+        if response.status_code != 200:
+            error_msg = f"Error: {response.text}"
+            return error_msg, error_msg
+        
+        ai_thoughts = response.json()['choices'][0]['message']['content']
+        
+        # ROBOT DECODER RING! Looks for the secret split code
+        if "===PAST===" in ai_thoughts:
+            parts = ai_thoughts.split("===PAST===")
+            new_section = parts[0].replace("===NEW===", "").strip()
+            past_section = parts[1].strip()
+            return new_section, past_section
+        elif "===NEW===" in ai_thoughts:
+            # If the AI only wrote the NEW code but forgot PAST
+            new_section = ai_thoughts.replace("===NEW===", "").strip()
+            return new_section, "None today."
+        else:
+            # If the AI forgot the secret code completely, just put it all in NEW
+            return ai_thoughts, "None today."
+            
     except Exception as e:
         error_msg = f"Connection broke: {str(e)}"
         return error_msg, error_msg
